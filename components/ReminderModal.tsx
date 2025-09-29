@@ -36,6 +36,11 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Manual input states
+  const [manualDateInput, setManualDateInput] = useState('');
+  const [manualTimeInput, setManualTimeInput] = useState('');
+  const [useManualInput, setUseManualInput] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -44,6 +49,11 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
         setTitle(reminder.title);
         setDescription(reminder.description || '');
         setSelectedDate(new Date(reminder.dateTime));
+        
+        // Initialize manual input fields with current values
+        const date = new Date(reminder.dateTime);
+        setManualDateInput(formatDateForInput(date));
+        setManualTimeInput(formatTimeForInput(date));
       } else {
         console.log('Creating new reminder');
         setTitle('');
@@ -55,23 +65,106 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
         defaultDate.setSeconds(0);
         defaultDate.setMilliseconds(0);
         setSelectedDate(defaultDate);
+        
+        // Initialize manual input fields with default values
+        setManualDateInput(formatDateForInput(defaultDate));
+        setManualTimeInput(formatTimeForInput(defaultDate));
       }
+      setUseManualInput(false);
     }
   }, [reminder, visible]);
+
+  const formatDateForInput = (date: Date) => {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear().toString();
+    return `${day}.${month}.${year}`;
+  };
+
+  const formatTimeForInput = (date: Date) => {
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  };
+
+  const parseManualInput = () => {
+    try {
+      // Parse date (DD.MM.YYYY format)
+      const dateParts = manualDateInput.split('.');
+      if (dateParts.length !== 3) {
+        throw new Error('Неверный формат даты');
+      }
+      
+      const day = parseInt(dateParts[0], 10);
+      const month = parseInt(dateParts[1], 10) - 1; // Month is 0-indexed
+      const year = parseInt(dateParts[2], 10);
+      
+      if (isNaN(day) || isNaN(month) || isNaN(year)) {
+        throw new Error('Неверный формат даты');
+      }
+      
+      if (day < 1 || day > 31 || month < 0 || month > 11 || year < 2024) {
+        throw new Error('Неверная дата');
+      }
+
+      // Parse time (HH:MM format)
+      const timeParts = manualTimeInput.split(':');
+      if (timeParts.length !== 2) {
+        throw new Error('Неверный формат времени');
+      }
+      
+      const hours = parseInt(timeParts[0], 10);
+      const minutes = parseInt(timeParts[1], 10);
+      
+      if (isNaN(hours) || isNaN(minutes)) {
+        throw new Error('Неверный формат времени');
+      }
+      
+      if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        throw new Error('Неверное время');
+      }
+
+      // Create new date
+      const newDate = new Date(year, month, day, hours, minutes, 0, 0);
+      
+      // Check if the date is valid (handles cases like 31st of February)
+      if (newDate.getDate() !== day || newDate.getMonth() !== month || newDate.getFullYear() !== year) {
+        throw new Error('Неверная дата');
+      }
+      
+      return newDate;
+    } catch (error) {
+      console.log('Error parsing manual input:', error);
+      throw error;
+    }
+  };
 
   const handleSave = async () => {
     console.log('Save button pressed');
     console.log('Title:', title);
     console.log('Description:', description);
-    console.log('Selected date:', selectedDate);
+    console.log('Use manual input:', useManualInput);
 
     if (!title.trim()) {
       Alert.alert('Ошибка', 'Пожалуйста, введите название напоминания');
       return;
     }
 
+    let finalDate = selectedDate;
+
+    // If using manual input, parse and validate it
+    if (useManualInput) {
+      try {
+        finalDate = parseManualInput();
+        console.log('Parsed manual date:', finalDate);
+      } catch (error) {
+        Alert.alert('Ошибка', `Неверный формат даты или времени: ${error.message}`);
+        return;
+      }
+    }
+
     const now = new Date();
-    if (selectedDate <= now) {
+    if (finalDate <= now) {
       Alert.alert('Ошибка', 'Пожалуйста, выберите время в будущем');
       return;
     }
@@ -85,14 +178,14 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           ...reminder,
           title: title.trim(),
           description: description.trim(),
-          dateTime: selectedDate,
+          dateTime: finalDate,
           updatedAt: new Date(),
         };
         await updateReminder(updatedReminder);
         console.log('Reminder updated successfully');
       } else {
         console.log('Adding new reminder');
-        await addReminder(title.trim(), description.trim(), selectedDate);
+        await addReminder(title.trim(), description.trim(), finalDate);
         console.log('Reminder added successfully');
       }
       
@@ -102,6 +195,9 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
       const defaultDate = new Date();
       defaultDate.setHours(defaultDate.getHours() + 1);
       setSelectedDate(defaultDate);
+      setManualDateInput(formatDateForInput(defaultDate));
+      setManualTimeInput(formatTimeForInput(defaultDate));
+      setUseManualInput(false);
       
       onClose();
     } catch (error) {
@@ -135,6 +231,9 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     newDate.setDate(date.getDate());
     setSelectedDate(newDate);
     setShowDatePicker(false);
+    
+    // Update manual input fields to match picker selection
+    setManualDateInput(formatDateForInput(newDate));
     console.log('Updated selectedDate after date selection:', newDate);
   };
 
@@ -147,7 +246,20 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     newDate.setMilliseconds(0);
     setSelectedDate(newDate);
     setShowTimePicker(false);
+    
+    // Update manual input fields to match picker selection
+    setManualTimeInput(formatTimeForInput(newDate));
     console.log('Updated selectedDate after time selection:', newDate);
+  };
+
+  const handleManualDateChange = (text: string) => {
+    setManualDateInput(text);
+    setUseManualInput(true);
+  };
+
+  const handleManualTimeChange = (text: string) => {
+    setManualTimeInput(text);
+    setUseManualInput(true);
   };
 
   const handleClose = () => {
@@ -159,12 +271,26 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
 
   const openDatePicker = () => {
     console.log('Opening date picker with current date:', selectedDate);
+    setUseManualInput(false);
     setShowDatePicker(true);
   };
 
   const openTimePicker = () => {
     console.log('Opening time picker with current time:', selectedDate);
+    setUseManualInput(false);
     setShowTimePicker(true);
+  };
+
+  const getDisplayDate = () => {
+    if (useManualInput) {
+      try {
+        const parsedDate = parseManualInput();
+        return parsedDate;
+      } catch {
+        return selectedDate;
+      }
+    }
+    return selectedDate;
   };
 
   return (
@@ -237,6 +363,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           <View style={styles.section}>
             <Text style={styles.label}>Дата и время *</Text>
             
+            {/* Picker Buttons */}
             <View style={styles.dateTimeContainer}>
               <Pressable
                 style={[styles.dateTimeButton, isSaving && styles.disabledButton]}
@@ -259,10 +386,52 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               </Pressable>
             </View>
 
+            {/* Manual Input Fields */}
+            <View style={styles.manualInputSection}>
+              <Text style={styles.manualInputLabel}>Или введите вручную:</Text>
+              
+              <View style={styles.manualInputContainer}>
+                <View style={styles.manualInputField}>
+                  <Text style={styles.manualInputFieldLabel}>Дата (ДД.ММ.ГГГГ)</Text>
+                  <TextInput
+                    style={[styles.manualInput, useManualInput && styles.manualInputActive]}
+                    value={manualDateInput}
+                    onChangeText={handleManualDateChange}
+                    placeholder="01.01.2024"
+                    placeholderTextColor={colors.textSecondary}
+                    keyboardType="numeric"
+                    maxLength={10}
+                    editable={!isSaving}
+                  />
+                </View>
+
+                <View style={styles.manualInputField}>
+                  <Text style={styles.manualInputFieldLabel}>Время (ЧЧ:ММ)</Text>
+                  <TextInput
+                    style={[styles.manualInput, useManualInput && styles.manualInputActive]}
+                    value={manualTimeInput}
+                    onChangeText={handleManualTimeChange}
+                    placeholder="12:00"
+                    placeholderTextColor={colors.textSecondary}
+                    keyboardType="numeric"
+                    maxLength={5}
+                    editable={!isSaving}
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.inputHint}>
+                Формат даты: ДД.ММ.ГГГГ (например, 25.12.2024)
+                {'\n'}Формат времени: ЧЧ:ММ (например, 14:30)
+              </Text>
+            </View>
+
             <View style={styles.selectedDateTimeContainer}>
-              <Text style={styles.selectedDateTimeLabel}>Выбранное время:</Text>
+              <Text style={styles.selectedDateTimeLabel}>
+                {useManualInput ? 'Введенное время:' : 'Выбранное время:'}
+              </Text>
               <Text style={styles.selectedDateTime}>
-                {selectedDate.toLocaleString('ru-RU', {
+                {getDisplayDate().toLocaleString('ru-RU', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
@@ -271,6 +440,11 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                   minute: '2-digit',
                 })}
               </Text>
+              {useManualInput && (
+                <Text style={styles.manualInputIndicator}>
+                  ✏️ Используется ручной ввод
+                </Text>
+              )}
             </View>
           </View>
         </ScrollView>
@@ -376,7 +550,7 @@ const styles = StyleSheet.create({
   dateTimeContainer: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   dateTimeButton: {
     flex: 1,
@@ -397,6 +571,49 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
   },
+  manualInputSection: {
+    marginBottom: 20,
+  },
+  manualInputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  manualInputContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 8,
+  },
+  manualInputField: {
+    flex: 1,
+  },
+  manualInputFieldLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  manualInput: {
+    backgroundColor: colors.backgroundAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  manualInputActive: {
+    borderColor: colors.primary,
+    borderWidth: 2,
+  },
+  inputHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    lineHeight: 16,
+  },
   selectedDateTimeContainer: {
     backgroundColor: colors.backgroundAlt,
     padding: 12,
@@ -414,5 +631,11 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: '500',
     textTransform: 'capitalize',
+  },
+  manualInputIndicator: {
+    fontSize: 12,
+    color: colors.primary,
+    marginTop: 4,
+    fontWeight: '500',
   },
 });

@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   ScrollView,
   Dimensions,
   StatusBar,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { Reminder, POSTPONE_OPTIONS } from '../types/reminder';
 import { colors } from '../styles/commonStyles';
@@ -30,16 +32,26 @@ export const FullScreenReminderAlert: React.FC<FullScreenReminderAlertProps> = (
 }) => {
   const { postponeReminder, completeReminder } = useReminders();
   const [timeLeft, setTimeLeft] = useState(60);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customMinutes, setCustomMinutes] = useState('');
+  const [customHours, setCustomHours] = useState('');
+  const [customDays, setCustomDays] = useState('');
 
-  const handleAutoClose = async () => {
+  const handleAutoClose = useCallback(async () => {
     await SoundService.stopSound();
     onClose();
-  };
+  }, [onClose]);
 
   useEffect(() => {
     if (visible && reminder) {
       // Start playing sound
       SoundService.playReminderSound();
+      
+      // Reset custom input
+      setShowCustomInput(false);
+      setCustomMinutes('');
+      setCustomHours('');
+      setCustomDays('');
       
       // Start countdown
       setTimeLeft(60);
@@ -69,6 +81,27 @@ export const FullScreenReminderAlert: React.FC<FullScreenReminderAlertProps> = (
     }
   };
 
+  const handleCustomPostpone = async () => {
+    const minutes = parseInt(customMinutes) || 0;
+    const hours = parseInt(customHours) || 0;
+    const days = parseInt(customDays) || 0;
+
+    const totalMinutes = minutes + (hours * 60) + (days * 24 * 60);
+
+    if (totalMinutes <= 0) {
+      Alert.alert('Ошибка', 'Пожалуйста, введите корректное время отсрочки');
+      return;
+    }
+
+    if (totalMinutes > 365 * 24 * 60) { // Max 1 year
+      Alert.alert('Ошибка', 'Максимальная отсрочка - 1 год');
+      return;
+    }
+
+    console.log('Custom postpone:', { minutes, hours, days, totalMinutes });
+    await handlePostpone(totalMinutes);
+  };
+
   const handleComplete = async () => {
     if (reminder) {
       await SoundService.stopSound();
@@ -80,6 +113,19 @@ export const FullScreenReminderAlert: React.FC<FullScreenReminderAlertProps> = (
   const handleDismiss = async () => {
     await SoundService.stopSound();
     onClose();
+  };
+
+  const formatCustomTime = () => {
+    const minutes = parseInt(customMinutes) || 0;
+    const hours = parseInt(customHours) || 0;
+    const days = parseInt(customDays) || 0;
+
+    const parts = [];
+    if (days > 0) parts.push(`${days} дн.`);
+    if (hours > 0) parts.push(`${hours} ч.`);
+    if (minutes > 0) parts.push(`${minutes} мин.`);
+
+    return parts.length > 0 ? parts.join(' ') : 'Не указано';
   };
 
   if (!visible || !reminder) return null;
@@ -101,56 +147,127 @@ export const FullScreenReminderAlert: React.FC<FullScreenReminderAlertProps> = (
         </View>
 
         {/* Content */}
-        <View style={styles.content}>
-          <Text style={styles.reminderTitle}>{reminder.title}</Text>
-          {reminder.description ? (
-            <Text style={styles.reminderDescription}>{reminder.description}</Text>
-          ) : null}
-          
-          <View style={styles.timeInfo}>
-            <IconSymbol name="clock" size={20} color={colors.backgroundAlt} />
-            <Text style={styles.timeText}>
-              {reminder.dateTime.toLocaleTimeString('ru-RU', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </Text>
+        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.content}>
+            <Text style={styles.reminderTitle}>{reminder.title}</Text>
+            {reminder.description ? (
+              <Text style={styles.reminderDescription}>{reminder.description}</Text>
+            ) : null}
+            
+            <View style={styles.timeInfo}>
+              <IconSymbol name="clock" size={20} color={colors.backgroundAlt} />
+              <Text style={styles.timeText}>
+                {reminder.dateTime.toLocaleTimeString('ru-RU', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+            </View>
           </View>
-        </View>
 
-        {/* Actions */}
-        <View style={styles.actions}>
-          <Text style={styles.postponeLabel}>Отложить на:</Text>
-          
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.postponeOptions}
-            contentContainerStyle={styles.postponeOptionsContent}
-          >
-            {POSTPONE_OPTIONS.map((option) => (
+          {/* Actions */}
+          <View style={styles.actions}>
+            <Text style={styles.postponeLabel}>Отложить на:</Text>
+            
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.postponeOptions}
+              contentContainerStyle={styles.postponeOptionsContent}
+            >
+              {POSTPONE_OPTIONS.map((option) => (
+                <Pressable
+                  key={option.minutes}
+                  style={styles.postponeButton}
+                  onPress={() => handlePostpone(option.minutes)}
+                >
+                  <Text style={styles.postponeButtonText}>{option.label}</Text>
+                </Pressable>
+              ))}
+              
+              {/* Custom time button */}
               <Pressable
-                key={option.minutes}
-                style={styles.postponeButton}
-                onPress={() => handlePostpone(option.minutes)}
+                style={[styles.postponeButton, styles.customButton]}
+                onPress={() => setShowCustomInput(!showCustomInput)}
               >
-                <Text style={styles.postponeButtonText}>{option.label}</Text>
+                <Text style={styles.postponeButtonText}>Другое время</Text>
               </Pressable>
-            ))}
-          </ScrollView>
+            </ScrollView>
 
-          <View style={styles.mainActions}>
-            <Pressable style={styles.completeButton} onPress={handleComplete}>
-              <IconSymbol name="checkmark" size={24} color={colors.backgroundAlt} />
-              <Text style={styles.completeButtonText}>Выполнено</Text>
-            </Pressable>
+            {/* Custom Input Section */}
+            {showCustomInput && (
+              <View style={styles.customInputSection}>
+                <Text style={styles.customInputLabel}>Введите время отсрочки:</Text>
+                
+                <View style={styles.customInputContainer}>
+                  <View style={styles.customInputField}>
+                    <Text style={styles.customInputFieldLabel}>Дни</Text>
+                    <TextInput
+                      style={styles.customInput}
+                      value={customDays}
+                      onChangeText={setCustomDays}
+                      placeholder="0"
+                      placeholderTextColor="rgba(255, 255, 255, 0.6)"
+                      keyboardType="numeric"
+                      maxLength={3}
+                    />
+                  </View>
 
-            <Pressable style={styles.dismissButton} onPress={handleDismiss}>
-              <IconSymbol name="xmark" size={20} color={colors.primary} />
-              <Text style={styles.dismissButtonText}>Закрыть</Text>
-            </Pressable>
+                  <View style={styles.customInputField}>
+                    <Text style={styles.customInputFieldLabel}>Часы</Text>
+                    <TextInput
+                      style={styles.customInput}
+                      value={customHours}
+                      onChangeText={setCustomHours}
+                      placeholder="0"
+                      placeholderTextColor="rgba(255, 255, 255, 0.6)"
+                      keyboardType="numeric"
+                      maxLength={2}
+                    />
+                  </View>
+
+                  <View style={styles.customInputField}>
+                    <Text style={styles.customInputFieldLabel}>Минуты</Text>
+                    <TextInput
+                      style={styles.customInput}
+                      value={customMinutes}
+                      onChangeText={setCustomMinutes}
+                      placeholder="0"
+                      placeholderTextColor="rgba(255, 255, 255, 0.6)"
+                      keyboardType="numeric"
+                      maxLength={2}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.customTimePreview}>
+                  <Text style={styles.customTimePreviewLabel}>Отложить на:</Text>
+                  <Text style={styles.customTimePreviewText}>{formatCustomTime()}</Text>
+                </View>
+
+                <Pressable
+                  style={styles.customPostponeButton}
+                  onPress={handleCustomPostpone}
+                >
+                  <IconSymbol name="clock" size={20} color={colors.primary} />
+                  <Text style={styles.customPostponeButtonText}>Отложить на указанное время</Text>
+                </Pressable>
+              </View>
+            )}
+
+            <View style={styles.mainActions}>
+              <Pressable style={styles.completeButton} onPress={handleComplete}>
+                <IconSymbol name="checkmark" size={24} color={colors.backgroundAlt} />
+                <Text style={styles.completeButtonText}>Выполнено</Text>
+              </Pressable>
+
+              <Pressable style={styles.dismissButton} onPress={handleDismiss}>
+                <IconSymbol name="xmark" size={20} color={colors.primary} />
+                <Text style={styles.dismissButtonText}>Закрыть</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </View>
     </View>
   );
@@ -204,10 +321,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.backgroundAlt,
   },
-  content: {
+  scrollContent: {
     flex: 1,
+  },
+  content: {
     alignItems: 'center',
-    justifyContent: 'center',
     paddingVertical: 32,
   },
   reminderTitle: {
@@ -242,6 +360,7 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: 20,
+    paddingBottom: 20,
   },
   postponeLabel: {
     fontSize: 18,
@@ -264,10 +383,87 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
+  customButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  },
   postponeButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.backgroundAlt,
+  },
+  customInputSection: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  customInputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.backgroundAlt,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  customInputContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  customInputField: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  customInputFieldLabel: {
+    fontSize: 12,
+    color: colors.backgroundAlt,
+    marginBottom: 4,
+    fontWeight: '500',
+    opacity: 0.8,
+  },
+  customInput: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 16,
+    color: colors.backgroundAlt,
+    textAlign: 'center',
+    minWidth: 60,
+  },
+  customTimePreview: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  customTimePreviewLabel: {
+    fontSize: 14,
+    color: colors.backgroundAlt,
+    marginBottom: 4,
+    opacity: 0.8,
+  },
+  customTimePreviewText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.backgroundAlt,
+  },
+  customPostponeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.backgroundAlt,
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  customPostponeButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
   },
   mainActions: {
     flexDirection: 'row',
