@@ -40,6 +40,7 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) 
   };
 
   const handleDelete = () => {
+    console.log('Delete button pressed for reminder:', reminder.id);
     Alert.alert(
       'Удалить напоминание',
       'Вы уверены, что хотите удалить это напоминание?',
@@ -48,14 +49,30 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) 
         { 
           text: 'Удалить', 
           style: 'destructive',
-          onPress: () => deleteReminder(reminder.id)
+          onPress: async () => {
+            console.log('Confirmed deletion for reminder:', reminder.id);
+            try {
+              await deleteReminder(reminder.id);
+              console.log('Reminder deleted successfully');
+            } catch (error) {
+              console.log('Error deleting reminder:', error);
+              Alert.alert('Ошибка', 'Не удалось удалить напоминание');
+            }
+          }
         },
       ]
     );
   };
 
-  const handleComplete = () => {
-    completeReminder(reminder.id);
+  const handleComplete = async () => {
+    console.log('Complete button pressed for reminder:', reminder.id);
+    try {
+      await completeReminder(reminder.id);
+      console.log('Reminder completed successfully');
+    } catch (error) {
+      console.log('Error completing reminder:', error);
+      Alert.alert('Ошибка', 'Не удалось отметить напоминание как выполненное');
+    }
   };
 
   const isOverdue = !reminder.isCompleted && reminder.dateTime < new Date();
@@ -72,17 +89,16 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) 
           )}
         </View>
         <View style={styles.actions}>
-          {!reminder.isCompleted && (
-            <Pressable style={styles.actionButton} onPress={handleComplete}>
-              <IconSymbol name="checkmark-circle" size={24} color={colors.success} />
-            </Pressable>
-          )}
           {onEdit && (
             <Pressable style={styles.actionButton} onPress={() => onEdit(reminder)}>
               <IconSymbol name="pencil" size={20} color={colors.primary} />
             </Pressable>
           )}
-          <Pressable style={styles.actionButton} onPress={handleDelete}>
+          <Pressable 
+            style={styles.actionButton} 
+            onPress={handleDelete}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <IconSymbol name="trash" size={20} color={colors.danger} />
           </Pressable>
         </View>
@@ -100,11 +116,22 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) 
           </Text>
         </View>
         
-        {reminder.isCompleted && (
+        {reminder.isCompleted ? (
           <View style={styles.completedIndicator}>
             <IconSymbol name="checkmark-circle-fill" size={16} color={colors.success} />
             <Text style={styles.completedText}>Выполнено</Text>
           </View>
+        ) : (
+          <Pressable 
+            style={styles.completeButton} 
+            onPress={handleComplete}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <View style={styles.checkbox}>
+              <IconSymbol name="checkmark" size={14} color="transparent" />
+            </View>
+            <Text style={styles.completeText}>Выполнено</Text>
+          </Pressable>
         )}
       </View>
     </View>
@@ -155,6 +182,7 @@ const styles = StyleSheet.create({
   actionButton: {
     padding: 8,
     marginLeft: 4,
+    borderRadius: 6,
   },
   description: {
     fontSize: 16,
@@ -189,5 +217,28 @@ const styles = StyleSheet.create({
     color: colors.success,
     marginLeft: 4,
     fontWeight: '600',
+  },
+  completeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+    backgroundColor: colors.backgroundAlt,
+  },
+  completeText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
   },
 });

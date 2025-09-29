@@ -135,7 +135,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     newDate.setDate(date.getDate());
     setSelectedDate(newDate);
     setShowDatePicker(false);
-    console.log('Updated selectedDate:', newDate);
+    console.log('Updated selectedDate after date selection:', newDate);
   };
 
   const handleTimeConfirm = (time: Date) => {
@@ -147,13 +147,24 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     newDate.setMilliseconds(0);
     setSelectedDate(newDate);
     setShowTimePicker(false);
-    console.log('Updated selectedDate:', newDate);
+    console.log('Updated selectedDate after time selection:', newDate);
   };
 
   const handleClose = () => {
     if (!isSaving) {
+      console.log('Closing modal');
       onClose();
     }
+  };
+
+  const openDatePicker = () => {
+    console.log('Opening date picker');
+    setShowDatePicker(true);
+  };
+
+  const openTimePicker = () => {
+    console.log('Opening time picker');
+    setShowTimePicker(true);
   };
 
   return (
@@ -225,26 +236,38 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
             <View style={styles.dateTimeContainer}>
               <Pressable
                 style={[styles.dateTimeButton, isSaving && styles.disabledButton]}
-                onPress={() => setShowDatePicker(true)}
+                onPress={openDatePicker}
                 disabled={isSaving}
               >
                 <IconSymbol name="calendar" size={20} color={colors.primary} />
                 <Text style={styles.dateTimeText}>{formatDate(selectedDate)}</Text>
+                <IconSymbol name="chevron-down" size={16} color={colors.textSecondary} />
               </Pressable>
 
               <Pressable
                 style={[styles.dateTimeButton, isSaving && styles.disabledButton]}
-                onPress={() => setShowTimePicker(true)}
+                onPress={openTimePicker}
                 disabled={isSaving}
               >
                 <IconSymbol name="clock" size={20} color={colors.primary} />
                 <Text style={styles.dateTimeText}>{formatTime(selectedDate)}</Text>
+                <IconSymbol name="chevron-down" size={16} color={colors.textSecondary} />
               </Pressable>
             </View>
 
-            <Text style={styles.dateTimeInfo}>
-              Выбранное время: {selectedDate.toLocaleString('ru-RU')}
-            </Text>
+            <View style={styles.selectedDateTimeContainer}>
+              <Text style={styles.selectedDateTimeLabel}>Выбранное время:</Text>
+              <Text style={styles.selectedDateTime}>
+                {selectedDate.toLocaleString('ru-RU', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </Text>
+            </View>
           </View>
         </ScrollView>
 
@@ -252,19 +275,29 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           isVisible={showDatePicker}
           mode="date"
           onConfirm={handleDateConfirm}
-          onCancel={() => setShowDatePicker(false)}
+          onCancel={() => {
+            console.log('Date picker cancelled');
+            setShowDatePicker(false);
+          }}
           minimumDate={new Date()}
           locale="ru-RU"
           date={selectedDate}
+          confirmTextIOS="Выбрать"
+          cancelTextIOS="Отмена"
         />
 
         <DateTimePickerModal
           isVisible={showTimePicker}
           mode="time"
           onConfirm={handleTimeConfirm}
-          onCancel={() => setShowTimePicker(false)}
+          onCancel={() => {
+            console.log('Time picker cancelled');
+            setShowTimePicker(false);
+          }}
           locale="ru-RU"
           date={selectedDate}
+          confirmTextIOS="Выбрать"
+          cancelTextIOS="Отмена"
         />
       </KeyboardAvoidingView>
     </Modal>
@@ -336,28 +369,43 @@ const styles = StyleSheet.create({
   dateTimeContainer: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   dateTimeButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 16,
     backgroundColor: colors.backgroundAlt,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
+    minHeight: 56,
   },
   dateTimeText: {
     fontSize: 16,
     color: colors.text,
-    marginLeft: 12,
     fontWeight: '500',
+    flex: 1,
+    marginLeft: 12,
   },
-  dateTimeInfo: {
+  selectedDateTimeContainer: {
+    backgroundColor: colors.backgroundAlt,
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  selectedDateTimeLabel: {
     fontSize: 14,
     color: colors.textSecondary,
-    fontStyle: 'italic',
-    textAlign: 'center',
+    marginBottom: 4,
+  },
+  selectedDateTime: {
+    fontSize: 16,
+    color: colors.text,
+    fontWeight: '500',
+    textTransform: 'capitalize',
   },
 });
