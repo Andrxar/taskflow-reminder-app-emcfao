@@ -90,16 +90,20 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) 
         </View>
         <View style={styles.actions}>
           {onEdit && (
-            <Pressable style={styles.actionButton} onPress={() => onEdit(reminder)}>
-              <IconSymbol name="pencil" size={20} color={colors.primary} />
+            <Pressable 
+              style={styles.actionButton} 
+              onPress={() => onEdit(reminder)}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            >
+              <IconSymbol name="pencil" size={24} color={colors.primary} />
             </Pressable>
           )}
           <Pressable 
-            style={styles.actionButton} 
+            style={styles.deleteButton} 
             onPress={handleDelete}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
           >
-            <IconSymbol name="trash" size={20} color={colors.danger} />
+            <IconSymbol name="trash" size={32} color={colors.danger} />
           </Pressable>
         </View>
       </View>
@@ -183,6 +187,12 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: 4,
     borderRadius: 6,
+  },
+  deleteButton: {
+    padding: 8,
+    marginLeft: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 59, 48, 0.1)',
   },
   description: {
     fontSize: 16,

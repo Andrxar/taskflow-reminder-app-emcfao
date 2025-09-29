@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import { NotificationService } from '../../services/notificationService';
 import * as Notifications from 'expo-notifications';
 
 type TabType = 'active' | 'completed';
+type SortType = 'date-asc' | 'date-desc' | 'title-asc' | 'title-desc';
 
 export default function RemindersScreen() {
   const {
@@ -34,6 +35,8 @@ export default function RemindersScreen() {
   } = useReminders();
   
   const [activeTab, setActiveTab] = useState<TabType>('active');
+  const [sortType, setSortType] = useState<SortType>('date-asc');
+  const [showSortMenu, setShowSortMenu] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [showPostponeModal, setShowPostponeModal] = useState(false);
   const [showFullScreenAlert, setShowFullScreenAlert] = useState(false);
@@ -92,6 +95,26 @@ export default function RemindersScreen() {
     };
   }, [activeReminders]);
 
+  // Sort reminders based on selected sort type
+  const sortedReminders = useMemo(() => {
+    const reminders = activeTab === 'active' ? activeReminders : completedReminders;
+    
+    return [...reminders].sort((a, b) => {
+      switch (sortType) {
+        case 'date-asc':
+          return a.dateTime.getTime() - b.dateTime.getTime();
+        case 'date-desc':
+          return b.dateTime.getTime() - a.dateTime.getTime();
+        case 'title-asc':
+          return a.title.localeCompare(b.title, 'ru');
+        case 'title-desc':
+          return b.title.localeCompare(a.title, 'ru');
+        default:
+          return a.dateTime.getTime() - b.dateTime.getTime();
+      }
+    });
+  }, [activeReminders, completedReminders, activeTab, sortType]);
+
   const handleAddReminder = () => {
     console.log('Add reminder button pressed');
     setEditingReminder(undefined);
@@ -130,6 +153,62 @@ export default function RemindersScreen() {
     }
   };
 
+  const getSortLabel = (sort: SortType) => {
+    switch (sort) {
+      case 'date-asc':
+        return 'По дате (сначала ближайшие)';
+      case 'date-desc':
+        return 'По дате (сначала дальние)';
+      case 'title-asc':
+        return 'По названию (А-Я)';
+      case 'title-desc':
+        return 'По названию (Я-А)';
+      default:
+        return 'По дате (сначала ближайшие)';
+    }
+  };
+
+  const renderSortMenu = () => {
+    if (!showSortMenu) return null;
+
+    const sortOptions: SortType[] = ['date-asc', 'date-desc', 'title-asc', 'title-desc'];
+
+    return (
+      <View style={styles.sortMenuOverlay}>
+        <Pressable 
+          style={styles.sortMenuBackdrop} 
+          onPress={() => setShowSortMenu(false)} 
+        />
+        <View style={styles.sortMenu}>
+          <Text style={styles.sortMenuTitle}>Сортировка</Text>
+          {sortOptions.map((option) => (
+            <Pressable
+              key={option}
+              style={[
+                styles.sortOption,
+                sortType === option && styles.activeSortOption
+              ]}
+              onPress={() => {
+                setSortType(option);
+                setShowSortMenu(false);
+              }}
+            >
+              <Text style={[
+                styles.sortOptionText,
+                sortType === option && styles.activeSortOptionText
+              ]}>
+                {getSortLabel(option)}
+              </Text>
+              {sortType === option && (
+                <IconSymbol name="checkmark" size={16} color={colors.primary} />
+              )}
+            </Pressable>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
   const renderEmptyState = (tab: TabType) => {
     const isActive = tab === 'active';
     return (
@@ -151,8 +230,6 @@ export default function RemindersScreen() {
       </View>
     );
   };
-
-  const currentReminders = activeTab === 'active' ? activeReminders : completedReminders;
 
   // Show welcome screen for first-time users
   if (showWelcome) {
@@ -193,10 +270,25 @@ export default function RemindersScreen() {
           </Pressable>
         </View>
 
+        {/* Sort Controls */}
+        {sortedReminders.length > 0 && (
+          <View style={styles.sortContainer}>
+            <Pressable
+              style={styles.sortButton}
+              onPress={() => setShowSortMenu(true)}
+            >
+              <IconSymbol name="arrow-up-arrow-down" size={16} color={colors.primary} />
+              <Text style={styles.sortButtonText}>{getSortLabel(sortType)}</Text>
+              <IconSymbol name="chevron-down" size={14} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+        )}
+
         {/* Content */}
         <ScrollView
           style={styles.content}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
+          indicatorStyle="default"
           refreshControl={
             <RefreshControl
               refreshing={loading}
@@ -205,11 +297,11 @@ export default function RemindersScreen() {
             />
           }
         >
-          {currentReminders.length === 0 ? (
+          {sortedReminders.length === 0 ? (
             renderEmptyState(activeTab)
           ) : (
             <View style={styles.remindersList}>
-              {currentReminders.map((reminder) => (
+              {sortedReminders.map((reminder) => (
                 <ReminderCard
                   key={reminder.id}
                   reminder={reminder}
@@ -231,6 +323,9 @@ export default function RemindersScreen() {
             </View>
           </Pressable>
         </View>
+
+        {/* Sort Menu */}
+        {renderSortMenu()}
       </View>
 
       {/* Modals */}
@@ -276,6 +371,84 @@ const styles = StyleSheet.create({
   },
   activeTabText: {
     ...commonStyles.activeTabText,
+  },
+  sortContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  sortButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  sortButtonText: {
+    fontSize: 14,
+    color: colors.text,
+    marginLeft: 8,
+    marginRight: 4,
+    flex: 1,
+  },
+  sortMenuOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  sortMenuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  sortMenu: {
+    position: 'absolute',
+    top: 120,
+    left: 16,
+    right: 16,
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 12,
+    paddingVertical: 8,
+    elevation: 8,
+    shadowColor: colors.text,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+  },
+  sortMenuTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  activeSortOption: {
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+  },
+  sortOptionText: {
+    fontSize: 14,
+    color: colors.text,
+    flex: 1,
+  },
+  activeSortOptionText: {
+    color: colors.primary,
+    fontWeight: '500',
   },
   content: {
     flex: 1,

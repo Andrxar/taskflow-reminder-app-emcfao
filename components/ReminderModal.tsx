@@ -42,7 +42,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
       if (reminder) {
         console.log('Editing reminder:', reminder);
         setTitle(reminder.title);
-        setDescription(reminder.description);
+        setDescription(reminder.description || '');
         setSelectedDate(new Date(reminder.dateTime));
       } else {
         console.log('Creating new reminder');
@@ -202,7 +202,11 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           </Pressable>
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.content} 
+          showsVerticalScrollIndicator={true}
+          indicatorStyle="default"
+        >
           <View style={styles.section}>
             <Text style={styles.label}>Название *</Text>
             <TextInput
