@@ -31,6 +31,11 @@ export const FullScreenReminderAlert: React.FC<FullScreenReminderAlertProps> = (
   const { postponeReminder, completeReminder } = useReminders();
   const [timeLeft, setTimeLeft] = useState(60);
 
+  const handleAutoClose = async () => {
+    await SoundService.stopSound();
+    onClose();
+  };
+
   useEffect(() => {
     if (visible && reminder) {
       // Start playing sound
@@ -54,12 +59,7 @@ export const FullScreenReminderAlert: React.FC<FullScreenReminderAlertProps> = (
         SoundService.stopSound();
       };
     }
-  }, [visible, reminder]);
-
-  const handleAutoClose = async () => {
-    await SoundService.stopSound();
-    onClose();
-  };
+  }, [visible, reminder, handleAutoClose]);
 
   const handlePostpone = async (minutes: number) => {
     if (reminder) {
