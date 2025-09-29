@@ -126,21 +126,40 @@ export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const deleteReminder = useCallback(async (id: string) => {
     try {
-      console.log('Deleting reminder:', id);
+      console.log('Starting deletion process for reminder ID:', id);
       
-      const reminder = [...activeReminders, ...completedReminders].find(r => r.id === id);
-      if (reminder?.notificationId) {
-        await NotificationService.cancelNotification(reminder.notificationId);
-        console.log('Cancelled notification for deleted reminder');
+      // Find the reminder in both active and completed lists
+      const allReminders = [...activeReminders, ...completedReminders];
+      const reminder = allReminders.find(r => r.id === id);
+      
+      if (!reminder) {
+        console.log('Reminder not found with ID:', id);
+        throw new Error('Напоминание не найдено');
       }
       
-      await ReminderStorage.deleteReminder(id);
-      console.log('Reminder deleted from storage');
+      console.log('Found reminder to delete:', reminder);
       
+      // Cancel notification if exists
+      if (reminder.notificationId) {
+        try {
+          await NotificationService.cancelNotification(reminder.notificationId);
+          console.log('Cancelled notification for deleted reminder:', reminder.notificationId);
+        } catch (notificationError) {
+          console.log('Error cancelling notification:', notificationError);
+          // Continue with deletion even if notification cancellation fails
+        }
+      }
+      
+      // Delete from storage
+      await ReminderStorage.deleteReminder(id);
+      console.log('Reminder deleted from storage successfully');
+      
+      // Refresh the reminders list
       await refreshReminders();
-      console.log('Reminders refreshed after deleting');
+      console.log('Reminders refreshed after deletion');
+      
     } catch (error) {
-      console.log('Error deleting reminder:', error);
+      console.log('Error in deleteReminder function:', error);
       throw error;
     }
   }, [activeReminders, completedReminders, refreshReminders]);

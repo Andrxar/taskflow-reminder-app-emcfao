@@ -13,6 +13,7 @@ import { Stack, router } from 'expo-router';
 import { colors, commonStyles } from '../../styles/commonStyles';
 import { IconSymbol } from '../../components/IconSymbol';
 import { NotificationService } from '../../services/notificationService';
+import { ReminderStorage } from '../../services/reminderStorage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
@@ -52,6 +53,33 @@ export default function SettingsScreen() {
         },
       ]
     );
+  };
+
+  const handleDebugStorage = async () => {
+    try {
+      const rawData = await ReminderStorage.getRawStorageData();
+      const reminders = await ReminderStorage.getReminders();
+      const activeReminders = await ReminderStorage.getActiveReminders();
+      const completedReminders = await ReminderStorage.getCompletedReminders();
+      
+      const debugInfo = `
+Отладочная информация хранилища:
+
+Всего напоминаний: ${reminders.length}
+Активных: ${activeReminders.length}
+Выполненных: ${completedReminders.length}
+
+Сырые данные: ${rawData ? 'Есть' : 'Нет'}
+
+Детали напоминаний:
+${reminders.map(r => `- ${r.title} (ID: ${r.id}, Активно: ${r.isActive}, Выполнено: ${r.isCompleted})`).join('\n')}
+      `;
+      
+      Alert.alert('Отладка хранилища', debugInfo);
+    } catch (error) {
+      console.log('Error debugging storage:', error);
+      Alert.alert('Ошибка', 'Не удалось получить информацию о хранилище');
+    }
   };
 
   const handleClearAllData = () => {
@@ -102,6 +130,13 @@ export default function SettingsScreen() {
       description: 'Сбросить экран приветствия',
       type: 'button' as const,
       onPress: handleResetWelcome,
+    },
+    {
+      icon: 'wrench-adjustable',
+      title: 'Отладка хранилища',
+      description: 'Показать информацию о сохраненных данных',
+      type: 'button' as const,
+      onPress: handleDebugStorage,
     },
     {
       icon: 'trash',
