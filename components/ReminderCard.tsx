@@ -79,6 +79,13 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) 
     }
   };
 
+  const handleEdit = () => {
+    console.log('Edit button pressed for reminder:', reminder.id);
+    if (onEdit) {
+      onEdit(reminder);
+    }
+  };
+
   const isOverdue = !reminder.isCompleted && reminder.dateTime < new Date();
 
   return (
@@ -96,7 +103,7 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) 
           {onEdit && (
             <Pressable 
               style={styles.actionButton} 
-              onPress={() => onEdit(reminder)}
+              onPress={handleEdit}
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             >
               <IconSymbol name="pencil" size={24} color={colors.primary} />

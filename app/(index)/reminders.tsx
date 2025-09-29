@@ -284,11 +284,13 @@ export default function RemindersScreen() {
           </View>
         )}
 
-        {/* Content */}
+        {/* Content with Enhanced Scrollbar */}
         <ScrollView
           style={styles.content}
+          contentContainerStyle={styles.contentContainer}
           showsVerticalScrollIndicator={true}
           indicatorStyle="default"
+          scrollIndicatorInsets={{ right: 1 }}
           refreshControl={
             <RefreshControl
               refreshing={loading}
@@ -308,6 +310,8 @@ export default function RemindersScreen() {
                   onEdit={activeTab === 'active' ? handleEditReminder : undefined}
                 />
               ))}
+              {/* Add some bottom padding to ensure scrollbar is visible */}
+              <View style={styles.bottomPadding} />
             </View>
           )}
         </ScrollView>
@@ -453,9 +457,15 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  contentContainer: {
+    flexGrow: 1,
+  },
   remindersList: {
     paddingVertical: 16,
     gap: 12,
+  },
+  bottomPadding: {
+    height: 20,
   },
   emptyState: {
     flex: 1,
