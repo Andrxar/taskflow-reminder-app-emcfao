@@ -43,11 +43,15 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) 
     console.log('Delete button pressed for reminder:', reminder.id);
     Alert.alert(
       'Удалить напоминание',
-      'Вы уверены, что хотите удалить это напоминание?',
+      'Вы уверены, что хотите удалить напоминание???',
       [
-        { text: 'Отмена', style: 'cancel' },
         { 
-          text: 'Удалить', 
+          text: 'НЕТ', 
+          style: 'cancel',
+          onPress: () => console.log('Deletion cancelled')
+        },
+        { 
+          text: 'ДА', 
           style: 'destructive',
           onPress: async () => {
             console.log('Confirmed deletion for reminder:', reminder.id);

@@ -158,12 +158,12 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   };
 
   const openDatePicker = () => {
-    console.log('Opening date picker');
+    console.log('Opening date picker with current date:', selectedDate);
     setShowDatePicker(true);
   };
 
   const openTimePicker = () => {
-    console.log('Opening time picker');
+    console.log('Opening time picker with current time:', selectedDate);
     setShowTimePicker(true);
   };
 
@@ -288,6 +288,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           date={selectedDate}
           confirmTextIOS="Выбрать"
           cancelTextIOS="Отмена"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
         />
 
         <DateTimePickerModal
@@ -302,6 +303,8 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           date={selectedDate}
           confirmTextIOS="Выбрать"
           cancelTextIOS="Отмена"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          is24Hour={true}
         />
       </KeyboardAvoidingView>
     </Modal>
