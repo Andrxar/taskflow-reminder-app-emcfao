@@ -62,6 +62,7 @@ export default function RemindersScreen() {
 
     // Listen for notification responses
     const responseListener = NotificationService.addNotificationResponseListener((response) => {
+      console.log('Notification response received:', response);
       const reminderId = response.notification.request.content.data?.reminderId;
       if (reminderId) {
         const reminder = activeReminders.find(r => r.id === reminderId);
@@ -74,6 +75,7 @@ export default function RemindersScreen() {
 
     // Listen for notifications received while app is in foreground
     const notificationListener = NotificationService.addNotificationListener((notification) => {
+      console.log('Notification received in foreground:', notification);
       const reminderId = notification.request.content.data?.reminderId;
       if (reminderId) {
         const reminder = activeReminders.find(r => r.id === reminderId);
@@ -91,16 +93,19 @@ export default function RemindersScreen() {
   }, [activeReminders]);
 
   const handleAddReminder = () => {
+    console.log('Add reminder button pressed');
     setEditingReminder(undefined);
     setShowReminderModal(true);
   };
 
   const handleEditReminder = (reminder: Reminder) => {
+    console.log('Edit reminder:', reminder);
     setEditingReminder(reminder);
     setShowReminderModal(true);
   };
 
   const handleCloseReminderModal = () => {
+    console.log('Closing reminder modal');
     setShowReminderModal(false);
     setEditingReminder(undefined);
   };
@@ -139,7 +144,7 @@ export default function RemindersScreen() {
         </Text>
         <Text style={styles.emptyDescription}>
           {isActive 
-            ? 'Создайте новое напоминание, нажав кнопку "+" выше'
+            ? 'Создайте новое напоминание, нажав кнопку "Добавить напоминание +" ниже'
             : 'Выполненные напоминания будут отображаться здесь'
           }
         </Text>
@@ -162,11 +167,6 @@ export default function RemindersScreen() {
           headerLeft: () => (
             <Pressable style={styles.settingsButton} onPress={() => router.push('/settings')}>
               <IconSymbol name="gear" size={24} color={colors.primary} />
-            </Pressable>
-          ),
-          headerRight: () => (
-            <Pressable style={styles.addButton} onPress={handleAddReminder}>
-              <IconSymbol name="plus" size={24} color={colors.primary} />
             </Pressable>
           ),
         }}
@@ -219,6 +219,18 @@ export default function RemindersScreen() {
             </View>
           )}
         </ScrollView>
+
+        {/* Enhanced Add Reminder Button */}
+        <View style={styles.addButtonContainer}>
+          <Pressable style={styles.addReminderButton} onPress={handleAddReminder}>
+            <View style={styles.addButtonContent}>
+              <View style={styles.plusIconContainer}>
+                <IconSymbol name="plus" size={32} color={colors.white} />
+              </View>
+              <Text style={styles.addButtonText}>Добавить напоминание +</Text>
+            </View>
+          </Pressable>
+        </View>
       </View>
 
       {/* Modals */}
@@ -293,10 +305,44 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
   },
-  addButton: {
-    padding: 8,
-  },
   settingsButton: {
     padding: 8,
+  },
+  addButtonContainer: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  addReminderButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    elevation: 4,
+    shadowColor: colors.primary,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  addButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plusIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  addButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.white,
   },
 });

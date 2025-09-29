@@ -1,3 +1,4 @@
+
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 export const colors = {
@@ -14,6 +15,8 @@ export const colors = {
   warning: '#F39C12',    // Orange
   danger: '#E74C3C',     // Red
   border: '#E1E8ED',     // Light border
+  white: '#FFFFFF',      // Pure white
+  black: '#000000',      // Pure black
 };
 
 export const buttonStyles = StyleSheet.create({

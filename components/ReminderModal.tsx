@@ -35,46 +35,80 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (reminder) {
-      setTitle(reminder.title);
-      setDescription(reminder.description);
-      setSelectedDate(reminder.dateTime);
-    } else {
-      setTitle('');
-      setDescription('');
-      setSelectedDate(new Date());
+    if (visible) {
+      if (reminder) {
+        console.log('Editing reminder:', reminder);
+        setTitle(reminder.title);
+        setDescription(reminder.description);
+        setSelectedDate(new Date(reminder.dateTime));
+      } else {
+        console.log('Creating new reminder');
+        setTitle('');
+        setDescription('');
+        // Set default time to 1 hour from now
+        const defaultDate = new Date();
+        defaultDate.setHours(defaultDate.getHours() + 1);
+        defaultDate.setMinutes(0);
+        defaultDate.setSeconds(0);
+        defaultDate.setMilliseconds(0);
+        setSelectedDate(defaultDate);
+      }
     }
   }, [reminder, visible]);
 
   const handleSave = async () => {
+    console.log('Save button pressed');
+    console.log('Title:', title);
+    console.log('Description:', description);
+    console.log('Selected date:', selectedDate);
+
     if (!title.trim()) {
       Alert.alert('Ошибка', 'Пожалуйста, введите название напоминания');
       return;
     }
 
-    if (selectedDate <= new Date()) {
+    const now = new Date();
+    if (selectedDate <= now) {
       Alert.alert('Ошибка', 'Пожалуйста, выберите время в будущем');
       return;
     }
 
+    setIsSaving(true);
+    
     try {
       if (reminder) {
+        console.log('Updating existing reminder');
         const updatedReminder: Reminder = {
           ...reminder,
           title: title.trim(),
           description: description.trim(),
           dateTime: selectedDate,
+          updatedAt: new Date(),
         };
         await updateReminder(updatedReminder);
+        console.log('Reminder updated successfully');
       } else {
+        console.log('Adding new reminder');
         await addReminder(title.trim(), description.trim(), selectedDate);
+        console.log('Reminder added successfully');
       }
+      
+      // Reset form
+      setTitle('');
+      setDescription('');
+      const defaultDate = new Date();
+      defaultDate.setHours(defaultDate.getHours() + 1);
+      setSelectedDate(defaultDate);
+      
       onClose();
     } catch (error) {
       console.log('Error saving reminder:', error);
       Alert.alert('Ошибка', 'Не удалось сохранить напоминание');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -94,20 +128,32 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   };
 
   const handleDateConfirm = (date: Date) => {
+    console.log('Date selected:', date);
     const newDate = new Date(selectedDate);
     newDate.setFullYear(date.getFullYear());
     newDate.setMonth(date.getMonth());
     newDate.setDate(date.getDate());
     setSelectedDate(newDate);
     setShowDatePicker(false);
+    console.log('Updated selectedDate:', newDate);
   };
 
   const handleTimeConfirm = (time: Date) => {
+    console.log('Time selected:', time);
     const newDate = new Date(selectedDate);
     newDate.setHours(time.getHours());
     newDate.setMinutes(time.getMinutes());
+    newDate.setSeconds(0);
+    newDate.setMilliseconds(0);
     setSelectedDate(newDate);
     setShowTimePicker(false);
+    console.log('Updated selectedDate:', newDate);
+  };
+
+  const handleClose = () => {
+    if (!isSaving) {
+      onClose();
+    }
   };
 
   return (
@@ -115,21 +161,33 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
       visible={visible}
       animationType="slide"
       presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.header}>
-          <Pressable style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelText}>Отмена</Text>
+          <Pressable 
+            style={styles.cancelButton} 
+            onPress={handleClose}
+            disabled={isSaving}
+          >
+            <Text style={[styles.cancelText, isSaving && styles.disabledText]}>
+              Отмена
+            </Text>
           </Pressable>
           <Text style={styles.headerTitle}>
             {reminder ? 'Редактировать' : 'Новое напоминание'}
           </Text>
-          <Pressable style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveText}>Сохранить</Text>
+          <Pressable 
+            style={[styles.saveButton, isSaving && styles.disabledButton]} 
+            onPress={handleSave}
+            disabled={isSaving}
+          >
+            <Text style={[styles.saveText, isSaving && styles.disabledText]}>
+              {isSaving ? 'Сохранение...' : 'Сохранить'}
+            </Text>
           </Pressable>
         </View>
 
@@ -143,6 +201,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               placeholder="Введите название напоминания"
               placeholderTextColor={colors.textSecondary}
               multiline
+              editable={!isSaving}
             />
           </View>
 
@@ -156,6 +215,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               placeholderTextColor={colors.textSecondary}
               multiline
               numberOfLines={3}
+              editable={!isSaving}
             />
           </View>
 
@@ -164,21 +224,27 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
             
             <View style={styles.dateTimeContainer}>
               <Pressable
-                style={styles.dateTimeButton}
+                style={[styles.dateTimeButton, isSaving && styles.disabledButton]}
                 onPress={() => setShowDatePicker(true)}
+                disabled={isSaving}
               >
                 <IconSymbol name="calendar" size={20} color={colors.primary} />
                 <Text style={styles.dateTimeText}>{formatDate(selectedDate)}</Text>
               </Pressable>
 
               <Pressable
-                style={styles.dateTimeButton}
+                style={[styles.dateTimeButton, isSaving && styles.disabledButton]}
                 onPress={() => setShowTimePicker(true)}
+                disabled={isSaving}
               >
                 <IconSymbol name="clock" size={20} color={colors.primary} />
                 <Text style={styles.dateTimeText}>{formatTime(selectedDate)}</Text>
               </Pressable>
             </View>
+
+            <Text style={styles.dateTimeInfo}>
+              Выбранное время: {selectedDate.toLocaleString('ru-RU')}
+            </Text>
           </View>
         </ScrollView>
 
@@ -189,6 +255,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           onCancel={() => setShowDatePicker(false)}
           minimumDate={new Date()}
           locale="ru-RU"
+          date={selectedDate}
         />
 
         <DateTimePickerModal
@@ -197,6 +264,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           onConfirm={handleTimeConfirm}
           onCancel={() => setShowTimePicker(false)}
           locale="ru-RU"
+          date={selectedDate}
         />
       </KeyboardAvoidingView>
     </Modal>
@@ -238,6 +306,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
   },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  disabledText: {
+    opacity: 0.5,
+  },
   content: {
     flex: 1,
     padding: 16,
@@ -262,6 +336,7 @@ const styles = StyleSheet.create({
   dateTimeContainer: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 8,
   },
   dateTimeButton: {
     flex: 1,
@@ -278,5 +353,11 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginLeft: 12,
     fontWeight: '500',
+  },
+  dateTimeInfo: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
 });
