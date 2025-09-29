@@ -100,15 +100,14 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) 
           )}
         </View>
         <View style={styles.actions}>
-          {onEdit && (
-            <Pressable 
-              style={styles.actionButton} 
-              onPress={handleEdit}
-              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-            >
-              <IconSymbol name="pencil" size={24} color={colors.primary} />
-            </Pressable>
-          )}
+          {/* Always show edit button for both active and completed reminders */}
+          <Pressable 
+            style={styles.actionButton} 
+            onPress={handleEdit}
+            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+          >
+            <IconSymbol name="pencil" size={24} color={colors.primary} />
+          </Pressable>
           <Pressable 
             style={styles.deleteButton} 
             onPress={handleDelete}

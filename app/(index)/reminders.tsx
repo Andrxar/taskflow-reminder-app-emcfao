@@ -307,7 +307,7 @@ export default function RemindersScreen() {
                 <ReminderCard
                   key={reminder.id}
                   reminder={reminder}
-                  onEdit={activeTab === 'active' ? handleEditReminder : undefined}
+                  onEdit={handleEditReminder}
                 />
               ))}
               {/* Add some bottom padding to ensure scrollbar is visible */}
