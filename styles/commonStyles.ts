@@ -1,14 +1,19 @@
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
 export const colors = {
-  primary: '#162456',    // Material Blue
-  secondary: '#193cb8',  // Darker Blue
-  accent: '#64B5F6',     // Light Blue
-  background: '#101824',  // Keeping dark background
-  backgroundAlt: '#162133',  // Keeping dark background
-  text: '#e3e3e3',       // Keeping light text
-  grey: '#90CAF9',       // Light Blue Grey
-  card: '#193cb8',       // Keeping dark card background
+  primary: '#4A90E2',    // Clean Blue
+  secondary: '#357ABD',  // Darker Blue
+  accent: '#7BB3F0',     // Light Blue
+  background: '#F8F9FA',  // Light background
+  backgroundAlt: '#FFFFFF',  // White background
+  text: '#2C3E50',       // Dark text
+  textSecondary: '#7F8C8D',  // Secondary text
+  grey: '#BDC3C7',       // Light Grey
+  card: '#FFFFFF',       // White card background
+  success: '#27AE60',    // Green
+  warning: '#F39C12',    // Orange
+  danger: '#E74C3C',     // Red
+  border: '#E1E8ED',     // Light border
 };
 
 export const buttonStyles = StyleSheet.create({
@@ -71,19 +76,54 @@ export const commonStyles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   card: {
-    backgroundColor: colors.backgroundAlt,
-    borderColor: colors.grey,
+    backgroundColor: colors.card,
+    borderColor: colors.border,
     borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
+    borderRadius: 12,
+    padding: 16,
     marginVertical: 8,
     width: '100%',
-    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.1)',
-    elevation: 2,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.1)',
+    elevation: 3,
   },
   icon: {
     width: 60,
     height: 60,
-    tintColor: "white",
+    tintColor: colors.primary,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: colors.text,
+    backgroundColor: colors.backgroundAlt,
+    marginVertical: 8,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: colors.backgroundAlt,
+    borderRadius: 8,
+    padding: 4,
+    marginBottom: 16,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  activeTab: {
+    backgroundColor: colors.primary,
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  activeTabText: {
+    color: colors.backgroundAlt,
   },
 });
