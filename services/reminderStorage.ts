@@ -65,6 +65,7 @@ export class ReminderStorage {
         console.log('Reminder updated successfully');
       } else {
         console.log('Reminder not found for update:', updatedReminder.id);
+        console.log('Available reminder IDs:', reminders.map(r => r.id));
         throw new Error('Reminder not found for update');
       }
     } catch (error) {
@@ -78,6 +79,7 @@ export class ReminderStorage {
       console.log('Deleting reminder from storage:', id);
       const reminders = await this.getReminders();
       console.log('Current reminders count before deletion:', reminders.length);
+      console.log('Available reminder IDs:', reminders.map(r => r.id));
       
       const reminderExists = reminders.some(r => r.id === id);
       if (!reminderExists) {
@@ -89,7 +91,7 @@ export class ReminderStorage {
       console.log('Reminders count after filtering:', filteredReminders.length);
       
       await this.saveReminders(filteredReminders);
-      console.log('Reminder deleted successfully');
+      console.log('Reminder deleted successfully from storage');
     } catch (error) {
       console.log('Error deleting reminder:', error);
       throw error;

@@ -48,7 +48,7 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) 
         { 
           text: 'НЕТ', 
           style: 'cancel',
-          onPress: () => console.log('Deletion cancelled')
+          onPress: () => console.log('Deletion cancelled for reminder:', reminder.id)
         },
         { 
           text: 'ДА', 
@@ -57,10 +57,10 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) 
             console.log('Confirmed deletion for reminder:', reminder.id);
             try {
               await deleteReminder(reminder.id);
-              console.log('Reminder deleted successfully');
+              console.log('Reminder deleted successfully:', reminder.id);
             } catch (error) {
-              console.log('Error deleting reminder:', error);
-              Alert.alert('Ошибка', 'Не удалось удалить напоминание');
+              console.log('Error deleting reminder:', reminder.id, error);
+              Alert.alert('Ошибка', 'Не удалось удалить напоминание. Попробуйте еще раз.');
             }
           }
         },
@@ -72,9 +72,9 @@ export const ReminderCard: React.FC<ReminderCardProps> = ({ reminder, onEdit }) 
     console.log('Complete button pressed for reminder:', reminder.id);
     try {
       await completeReminder(reminder.id);
-      console.log('Reminder completed successfully');
+      console.log('Reminder completed successfully:', reminder.id);
     } catch (error) {
-      console.log('Error completing reminder:', error);
+      console.log('Error completing reminder:', reminder.id, error);
       Alert.alert('Ошибка', 'Не удалось отметить напоминание как выполненное');
     }
   };

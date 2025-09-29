@@ -97,23 +97,47 @@ export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       console.log('Updating reminder:', reminder);
       
-      reminder.updatedAt = new Date();
+      const now = new Date();
+      const updatedReminder = { ...reminder };
+      updatedReminder.updatedAt = new Date();
       
-      // Cancel old notification and schedule new one if needed
-      if (reminder.notificationId) {
-        await NotificationService.cancelNotification(reminder.notificationId);
-        console.log('Cancelled old notification:', reminder.notificationId);
+      // Check if the reminder should be moved between tabs
+      if (updatedReminder.dateTime > now) {
+        // Future date - should be active
+        if (updatedReminder.isCompleted) {
+          console.log('Moving reminder from Completed to Active tab due to future date');
+          updatedReminder.isCompleted = false;
+          updatedReminder.isActive = true;
+        }
+      } else {
+        // Past date - if it was active, it should remain active but could be overdue
+        // Don't automatically complete past reminders, let user decide
       }
       
-      if (reminder.isActive && !reminder.isCompleted) {
-        const notificationId = await NotificationService.scheduleNotification(reminder);
-        if (notificationId) {
-          reminder.notificationId = notificationId;
-          console.log('Scheduled new notification:', notificationId);
+      // Cancel old notification and schedule new one if needed
+      if (updatedReminder.notificationId) {
+        try {
+          await NotificationService.cancelNotification(updatedReminder.notificationId);
+          console.log('Cancelled old notification:', updatedReminder.notificationId);
+        } catch (notificationError) {
+          console.log('Error cancelling old notification:', notificationError);
+        }
+      }
+      
+      // Schedule new notification if reminder is active and not completed
+      if (updatedReminder.isActive && !updatedReminder.isCompleted && updatedReminder.dateTime > now) {
+        try {
+          const notificationId = await NotificationService.scheduleNotification(updatedReminder);
+          if (notificationId) {
+            updatedReminder.notificationId = notificationId;
+            console.log('Scheduled new notification:', notificationId);
+          }
+        } catch (notificationError) {
+          console.log('Error scheduling new notification:', notificationError);
         }
       }
 
-      await ReminderStorage.updateReminder(reminder);
+      await ReminderStorage.updateReminder(updatedReminder);
       console.log('Reminder updated in storage');
       
       await refreshReminders();
@@ -134,6 +158,7 @@ export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       if (!reminder) {
         console.log('Reminder not found with ID:', id);
+        console.log('Available reminder IDs:', allReminders.map(r => r.id));
         throw new Error('Напоминание не найдено');
       }
       
@@ -154,7 +179,20 @@ export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       await ReminderStorage.deleteReminder(id);
       console.log('Reminder deleted from storage successfully');
       
-      // Refresh the reminders list
+      // Update local state immediately for better UX
+      setActiveReminders(prev => {
+        const filtered = prev.filter(r => r.id !== id);
+        console.log('Updated active reminders count:', filtered.length);
+        return filtered;
+      });
+      
+      setCompletedReminders(prev => {
+        const filtered = prev.filter(r => r.id !== id);
+        console.log('Updated completed reminders count:', filtered.length);
+        return filtered;
+      });
+      
+      // Also refresh from storage to ensure consistency
       await refreshReminders();
       console.log('Reminders refreshed after deletion');
       
@@ -170,20 +208,27 @@ export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       const reminder = activeReminders.find(r => r.id === id);
       if (reminder) {
-        reminder.isCompleted = true;
-        reminder.isActive = false;
-        reminder.updatedAt = new Date();
+        const updatedReminder = { ...reminder };
+        updatedReminder.isCompleted = true;
+        updatedReminder.isActive = false;
+        updatedReminder.updatedAt = new Date();
         
-        if (reminder.notificationId) {
-          await NotificationService.cancelNotification(reminder.notificationId);
-          console.log('Cancelled notification for completed reminder');
+        if (updatedReminder.notificationId) {
+          try {
+            await NotificationService.cancelNotification(updatedReminder.notificationId);
+            console.log('Cancelled notification for completed reminder');
+          } catch (notificationError) {
+            console.log('Error cancelling notification for completed reminder:', notificationError);
+          }
         }
         
-        await ReminderStorage.updateReminder(reminder);
+        await ReminderStorage.updateReminder(updatedReminder);
         console.log('Reminder marked as completed in storage');
         
         await refreshReminders();
         console.log('Reminders refreshed after completing');
+      } else {
+        console.log('Active reminder not found for completion:', id);
       }
     } catch (error) {
       console.log('Error completing reminder:', error);
@@ -198,12 +243,15 @@ export const ReminderProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const reminder = activeReminders.find(r => r.id === id);
       if (reminder) {
         const newDateTime = new Date(reminder.dateTime.getTime() + minutes * 60 * 1000);
-        reminder.dateTime = newDateTime;
-        reminder.updatedAt = new Date();
+        const updatedReminder = { ...reminder };
+        updatedReminder.dateTime = newDateTime;
+        updatedReminder.updatedAt = new Date();
         
         console.log('New reminder time:', newDateTime);
         
-        await updateReminder(reminder);
+        await updateReminder(updatedReminder);
+      } else {
+        console.log('Active reminder not found for postponing:', id);
       }
     } catch (error) {
       console.log('Error postponing reminder:', error);
