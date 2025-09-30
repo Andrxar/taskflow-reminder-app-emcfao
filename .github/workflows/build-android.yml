@@ -1,0 +1,47 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Забираем код репозитория
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Настраиваем Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      # 3️⃣ Устанавливаем зависимости проекта
+      - name: Install dependencies
+        run: npm install
+
+      # 4️⃣ Устанавливаем EAS CLI
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      # 5️⃣ Логинимся в Expo с токеном
+      - name: Login to Expo
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas login --token $EXPO_TOKEN
+
+      # 6️⃣ Собираем APK для Android
+      - name: Build Android APK
+        run: eas build --platform android --profile preview --non-interactive
+
+      # 7️⃣ Сохраняем APK как артефакт GitHub Actions
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-apk
+          path: |
+            **/*.apk
