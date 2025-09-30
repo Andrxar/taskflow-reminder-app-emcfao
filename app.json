@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Napominalka1",
-    "slug": "napominalka1",
+    "name": "Natively",
+    "slug": "Natively",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.andrx.napominalka1",
+      "bundleIdentifier": "com.anonymous.Natively",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -25,7 +25,7 @@
         "backgroundColor": "#000000"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.andrx.napominalka1",
+      "package": "com.anonymous.Natively",
       "permissions": [
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
@@ -51,12 +51,15 @@
         }
       ]
     ],
-    "scheme": "napominalka1",
+    "scheme": "natively",
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "650dc548-1307-43...your_full_project_id_here..."
+      }
     }
   }
 }
